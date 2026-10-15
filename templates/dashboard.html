@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — BiasharaSmart AI{% endblock %}
+{% block content %}
+<section class="welcome-row"><div><span class="eyebrow">BUSINESS OVERVIEW</span><h1>Habari, {{ current_user.business_name }} 👋</h1><p class="muted">Here is how your recorded business activity is looking.</p></div><a class="button primary" href="{{ url_for('sales') }}">＋ Record a sale</a></section>
+<section class="metric-grid">
+  <article class="metric-card"><span class="metric-label">Recorded revenue</span><strong>KSh {{ "{:,.2f}".format(revenue) }}</strong><span class="metric-foot">From sales entered</span></article>
+  <article class="metric-card"><span class="metric-label">Gross profit</span><strong>KSh {{ "{:,.2f}".format(gross_profit) }}</strong><span class="metric-foot">Revenue minus product costs</span></article>
+  <article class="metric-card"><span class="metric-label">Operating expenses</span><strong>KSh {{ "{:,.2f}".format(expense_total) }}</strong><span class="metric-foot">Expenses you recorded</span></article>
+  <article class="metric-card highlight"><span class="metric-label">Net operating profit</span><strong>KSh {{ "{:,.2f}".format(net_profit) }}</strong><span class="metric-foot">Before tax and unrecorded costs</span></article>
+</section>
+<section class="dashboard-grid"><article class="panel"><div class="panel-heading"><div><span class="eyebrow">INVENTORY</span><h2>Your stock</h2></div><a href="{{ url_for('products') }}">Manage →</a></div>
+<div class="stock-summary"><div><strong>{{ products|length }}</strong><span>Products</span></div><div><strong>KSh {{ "{:,.2f}".format(stock_value) }}</strong><span>Stock cost value</span></div><div><strong class="{{ 'warning-text' if low_stock else '' }}">{{ low_stock }}</strong><span>Low-stock items</span></div></div>
+{% if products %}<div class="table-wrap"><table><thead><tr><th>Product</th><th>In stock</th><th>Price</th></tr></thead><tbody>{% for p in products[:5] %}<tr><td>{{ p.name }}</td><td><span class="{{ 'stock-low' if p.quantity <= 5 else 'stock-ok' }}">{{ p.quantity }}</span></td><td>KSh {{ "{:,.2f}".format(p.selling_price) }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><span>▦</span><strong>Your inventory starts here</strong><p>Add the products you sell to begin tracking stock.</p><a href="{{ url_for('products') }}">Add your first product →</a></div>{% endif %}</article>
+<article class="panel"><div class="panel-heading"><div><span class="eyebrow">RECENT ACTIVITY</span><h2>Latest sales</h2></div><a href="{{ url_for('sales') }}">All sales →</a></div>
+{% if sales %}<div class="activity-list">{% for sale in sales %}<div class="activity-row"><span class="activity-icon">↗</span><div class="activity-main"><strong>{{ sale.product_name }}</strong><small>{{ sale.quantity }} unit(s) · {{ sale.created_at.strftime('%d %b, %H:%M') }}</small></div><strong class="activity-amount">KSh {{ "{:,.2f}".format(sale.revenue) }}</strong></div>{% endfor %}</div>{% else %}<div class="empty-state"><span>↗</span><strong>No sales yet</strong><p>Your sales will show here once recorded.</p><a href="{{ url_for('sales') }}">Record a sale →</a></div>{% endif %}
+<div class="quick-links"><a href="{{ url_for('products') }}">＋ Add product</a><a href="{{ url_for('expenses') }}">＋ Add expense</a></div></article></section>
+<div class="notice"><strong>Keep in mind:</strong> These totals only reflect the transactions you have entered. Net operating profit is a simple estimate, not a tax or audited accounting statement.</div>
+{% endblock %}
