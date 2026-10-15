@@ -116,7 +116,7 @@ def positive_amount(raw, field_name):
 
 @app.context_processor
 def inject_helpers():
-    return {"money": money}
+    return {"money": money, "now_year": datetime.utcnow().year}
 
 
 @app.get("/")
@@ -217,9 +217,9 @@ def products():
             db.session.commit()
             flash("Product added to your inventory.", "success")
             return redirect(url_for("products"))
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as exc:
             db.session.rollback()
-            flash(str(__import__("sys").exc_info()[1]), "error")
+            flash(str(exc), "error")
     items = Product.query.filter_by(user_id=current_user.id).order_by(Product.name.asc()).all()
     return render_template("products.html", products=items)
 
