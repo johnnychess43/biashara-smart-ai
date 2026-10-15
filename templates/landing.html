@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}BiasharaSmart AI — Your business, clearer{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <span class="eyebrow"><span class="dot"></span> YOUR BUSINESS, IN FOCUS</span>
+    <h1>Run your business with <span>confidence.</span></h1>
+    <p class="hero-lede">Know what you sell, what you spend, what is in stock, and what you actually earn — all in one simple workspace.</p>
+    <div class="hero-actions"><a class="button primary" href="{{ url_for('register') }}">Create your free workspace <span>→</span></a><a class="button secondary" href="{{ url_for('login') }}">I already have an account</a></div>
+    <div class="trust-note"><span>✓</span> Private workspace · Made for small businesses</div>
+  </div>
+  <div class="preview-card">
+    <div class="preview-top"><div><small>YOUR BUSINESS OVERVIEW</small><h3>Looking good.</h3></div><span class="live-dot">● LIVE PREVIEW</span></div>
+    <div class="preview-metric"><span>Net operating profit</span><strong>KSh 28,450</strong><small>Illustrative demo figures</small></div>
+    <div class="preview-bars"><i style="height:35%"></i><i style="height:48%"></i><i style="height:42%"></i><i style="height:65%"></i><i style="height:55%"></i><i style="height:82%"></i><i style="height:72%"></i><i style="height:95%"></i><i style="height:77%"></i><i style="height:100%"></i><i style="height:88%"></i><i style="height:95%"></i></div>
+    <div class="preview-bottom"><span>Sales overview</span><span>Simple. Clear. Yours.</span></div>
+  </div>
+</section>
+<section class="features">
+  <div class="section-heading"><span class="eyebrow">THE ESSENTIALS, SORTED</span><h2>Less guesswork. Better decisions.</h2><p>Start with the numbers that matter most to your day-to-day business.</p></div>
+  <div class="feature-grid">
+    <article class="feature-card"><span class="feature-icon">↗</span><h3>Sales tracking</h3><p>Record sales and see revenue and gross profit based on your product costs.</p></article>
+    <article class="feature-card"><span class="feature-icon">▦</span><h3>Stock control</h3><p>Know what you have, what is selling, and which products need restocking.</p></article>
+    <article class="feature-card"><span class="feature-icon">◎</span><h3>Expense tracking</h3><p>Record business spending and understand what remains after costs.</p></article>
+  </div>
+</section>
+{% endblock %}
