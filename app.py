@@ -66,6 +66,7 @@ class PasswordResetCode(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
     used_at = db.Column(db.DateTime, nullable=True)
+    attempts = db.Column(db.Integer, nullable=False, default=0)
     user = db.relationship("User")
 
 
@@ -204,9 +205,9 @@ def login():
 
 
 
-def deliver_reset_code(user, code):
+def deliver_reset_code(user, code, channel):
     """Send reset codes through configured SMTP or Twilio; never expose them in responses."""
-    if user.phone:
+    if channel == "phone" and user.phone:
         sid = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
         token = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
         from_number = os.environ.get("TWILIO_FROM_NUMBER", "").strip()
@@ -225,6 +226,8 @@ def deliver_reset_code(user, code):
         except Exception:
             app.logger.exception("Password reset SMS delivery failed.")
             return False
+    if channel != "email" or not user.email:
+        return False
     host = os.environ.get("SMTP_HOST", "").strip()
     sender = os.environ.get("SMTP_FROM", os.environ.get("SMTP_USERNAME", "")).strip()
     if not (host and sender and user.email):
@@ -257,6 +260,7 @@ def forgot_password():
         user = User.query.filter(
             db.or_(User.email == identifier.lower(), User.phone == identifier)
         ).first() if identifier else None
+        channel = "email" if user and user.email == identifier.lower() else "phone"
         now = datetime.utcnow()
         # Keep responses identical for known and unknown accounts.
         if user:
@@ -276,7 +280,7 @@ def forgot_password():
                 )
                 db.session.add(reset)
                 db.session.commit()
-                if not deliver_reset_code(user, code):
+                if not deliver_reset_code(user, code, channel):
                     # Do not pretend delivery succeeded; keep the public response generic.
                     app.logger.error("A password reset code could not be delivered for user id %s.", user.id)
         flash("If the account matches the details provided, a reset code will be sent using its registered contact. Check your inbox or messages.", "info")
@@ -296,8 +300,13 @@ def reset_password():
         ).first() if identifier else None
         reset = PasswordResetCode.query.filter_by(user_id=user.id, used_at=None).order_by(
             PasswordResetCode.created_at.desc()).first() if user else None
-        valid_code = bool(reset and reset.expires_at >= datetime.utcnow() and
+        valid_code = bool(reset and reset.expires_at >= datetime.utcnow() and reset.attempts < 5 and
                           secrets.compare_digest(reset.code_hash, hashlib.sha256(code.encode()).hexdigest()))
+        if reset and not valid_code:
+            reset.attempts += 1
+            if reset.attempts >= 5:
+                reset.used_at = datetime.utcnow()
+            db.session.commit()
         if not valid_code:
             flash("The reset details are invalid or expired. Request a new code and try again.", "error")
         elif len(password) < 10 or password != confirm:
