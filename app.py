@@ -163,17 +163,22 @@ def register():
     if request.method == "POST":
         business_name = request.form.get("business_name", "").strip()
         email = request.form.get("email", "").strip().lower()
+        phone = request.form.get("phone", "").strip() or None
         password = request.form.get("password", "")
         if not business_name or len(business_name) > 120:
             flash("Enter a business name (up to 120 characters).", "error")
         elif not email or len(email) > 255 or "@" not in email:
             flash("Enter a valid email address.", "error")
+        elif phone and (len(phone) > 32 or not phone.startswith("+") or not phone[1:].isdigit()):
+            flash("Enter a phone number in international format, e.g. +254712345678.", "error")
+        elif phone and User.query.filter_by(phone=phone).first():
+            flash("That phone number is already linked to an account.", "error")
         elif len(password) < 10:
             flash("Use a password with at least 10 characters.", "error")
         elif User.query.filter_by(email=email).first():
             flash("An account with that email already exists. Please sign in.", "error")
         else:
-            user = User(business_name=business_name, email=email)
+            user = User(business_name=business_name, email=email, phone=phone)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
