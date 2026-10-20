@@ -31,6 +31,10 @@ Open http://127.0.0.1:5000 in your browser. If PowerShell blocks activation, run
 
 The local SQLite database is created under `instance/biashara.db`. Keep the `instance/` folder private and do not commit it.
 
+## Password recovery delivery
+
+Password recovery supports the account's registered email or phone number. Configure SMTP with `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_FROM`, and optional `SMTP_USERNAME` / `SMTP_PASSWORD` for email. For SMS, configure `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_FROM_NUMBER`; store phone numbers in international format (for example, +254...). **SMS recovery is intentionally disabled for unverified phone numbers**: a trusted phone-verification workflow must mark `phone_verified` only after proof of possession. Reset codes expire after 10 minutes, are single-use, are HMAC-protected in the database, and requests are throttled per account. Configure a real mail/SMS provider before production use.
+
 ## Important before public deployment
 
 This is an MVP, not yet a production accounting or tax system. Before inviting real customers, configure a strong secret key in the hosting environment, use a managed PostgreSQL database with backups, enable HTTPS/secure cookies, add login rate limiting and password-reset flow, and test database migrations and recovery. Never commit passwords, API keys, or customer data.
