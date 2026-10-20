@@ -448,6 +448,9 @@ with app.app_context():
     if "user" in inspector.get_table_names() and "phone" not in {column["name"] for column in inspector.get_columns("user")}:
         with db.engine.begin() as connection:
             connection.exec_driver_sql("ALTER TABLE user ADD COLUMN phone VARCHAR(32)")
+    if "password_reset_code" in inspector.get_table_names() and "attempts" not in {column["name"] for column in inspector.get_columns("password_reset_code")}:
+        with db.engine.begin() as connection:
+            connection.exec_driver_sql("ALTER TABLE password_reset_code ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0")
     try:
         with db.engine.begin() as connection:
             connection.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_user_phone ON user (phone)")
