@@ -1,5 +1,6 @@
 import os
 import hashlib
+import hmac
 import secrets
 import smtplib
 import urllib.parse
@@ -49,6 +50,7 @@ class User(UserMixin, db.Model):
     business_name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     phone = db.Column(db.String(32), unique=True, nullable=True, index=True)
+    phone_verified = db.Column(db.Boolean, nullable=False, default=False)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
@@ -263,7 +265,7 @@ def forgot_password():
         channel = "email" if user and user.email == identifier.lower() else "phone"
         now = datetime.utcnow()
         # Keep responses identical for known and unknown accounts.
-        if user:
+        if user and (channel != "phone" or user.phone_verified):
             recent_count = PasswordResetCode.query.filter(
                 PasswordResetCode.user_id == user.id,
                 PasswordResetCode.created_at >= now - timedelta(hours=1)
@@ -274,7 +276,7 @@ def forgot_password():
                 code = f"{secrets.randbelow(1_000_000):06d}"
                 reset = PasswordResetCode(
                     user_id=user.id,
-                    code_hash=hashlib.sha256(code.encode()).hexdigest(),
+                    code_hash=hmac.new(app.config["SECRET_KEY"].encode(), code.encode(), hashlib.sha256).hexdigest(),
                     created_at=now,
                     expires_at=now + timedelta(minutes=10),
                 )
@@ -300,8 +302,9 @@ def reset_password():
         ).first() if identifier else None
         reset = PasswordResetCode.query.filter_by(user_id=user.id, used_at=None).order_by(
             PasswordResetCode.created_at.desc()).first() if user else None
+        expected_hash = hmac.new(app.config["SECRET_KEY"].encode(), code.encode(), hashlib.sha256).hexdigest()
         valid_code = bool(reset and reset.expires_at >= datetime.utcnow() and reset.attempts < 5 and
-                          secrets.compare_digest(reset.code_hash, hashlib.sha256(code.encode()).hexdigest()))
+                          secrets.compare_digest(reset.code_hash, expected_hash))
         if reset and not valid_code:
             reset.attempts += 1
             if reset.attempts >= 5:
@@ -448,6 +451,9 @@ with app.app_context():
     if "user" in inspector.get_table_names() and "phone" not in {column["name"] for column in inspector.get_columns("user")}:
         with db.engine.begin() as connection:
             connection.exec_driver_sql("ALTER TABLE user ADD COLUMN phone VARCHAR(32)")
+    if "user" in inspector.get_table_names() and "phone_verified" not in {column["name"] for column in inspector.get_columns("user")}:
+        with db.engine.begin() as connection:
+            connection.exec_driver_sql("ALTER TABLE user ADD COLUMN phone_verified BOOLEAN NOT NULL DEFAULT FALSE")
     if "password_reset_code" in inspector.get_table_names() and "attempts" not in {column["name"] for column in inspector.get_columns("password_reset_code")}:
         with db.engine.begin() as connection:
             connection.exec_driver_sql("ALTER TABLE password_reset_code ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0")
